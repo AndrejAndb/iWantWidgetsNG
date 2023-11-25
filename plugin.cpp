@@ -1,5 +1,6 @@
 #include <IWWPapyrus.h>
 #include <IWWFunctions.h>
+#include <IWWHooks.h>
 
 namespace IWW {
     #if(LOGGING > 0)
@@ -25,6 +26,8 @@ namespace IWW {
 
         SKSE::GetPapyrusInterface()->Register(IWW::RegisterPapyrusFunctions);
         SKSE::GetMessagingInterface()->RegisterListener(IWW::OnMessageReceived);
+
+        IWW::Hooks::installHooks();
         return true;
     }
 }

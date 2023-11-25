@@ -40,6 +40,7 @@ endif()
 set(source_files ${source_files}
     src/IWWPapyrus.cpp
     src/IWWFunctions.cpp
+    src/IWWHooks.cpp
     src/ImGui/Manager.cpp
     src/ImGui/Widget.cpp
     src/ImGui/TestWidget.cpp

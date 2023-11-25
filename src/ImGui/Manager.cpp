@@ -38,8 +38,44 @@ void IWW::ImGui::Manager::Init() {
 }
 
 void IWW::ImGui::Manager::Render() {
+    if (!isInitialized) {
+        return;
+    }
 
+    ProcessInputEventQueue();
+
+    /* bool bShouldDraw = false;
+    for (const auto& window : _windows) {
+        if (window->ShouldDraw()) {
+            bShouldDraw = true;
+        }
+    }
+
+    if (!bShouldDraw) {
+        // early out
+        return;
+    }*/
+
+    UpdateStyle();
+    ImGui_ImplWin32_NewFrame();
+    ImGui_ImplDX11_NewFrame();
+    ::ImGui::NewFrame();
+
+    /* for (const auto& window : _windows) {
+        window->TryDraw();
+    }*/
+
+    ::ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(::ImGui::GetDrawData());
 }
+
+void IWW::ImGui::Manager::ProcessInputEventQueue() {}
+
+void IWW::ImGui::Manager::OnFocusLost() {}
+
+void IWW::ImGui::Manager::ProcessInputEvents(const RE::InputEvent* const* a_events) {}
+
+bool IWW::ImGui::Manager::ShouldConsumeInput() const { return false; }
 
 ImGuiStyle IWW::ImGui::Manager::GetDefaultStyle() {
 

@@ -4,6 +4,8 @@
 
 #include <imgui.h>
 
+// https://github.com/ersh1/OpenAnimationReplacer/blob/97f5b31e4f24a9e71b1f5a65984621f85db5cdd5/src/UI/UIManager.h
+
 namespace IWW::ImGui {
     class Manager {
     public:
@@ -14,6 +16,14 @@ namespace IWW::ImGui {
 
         void Init();
         void Render();
+
+        void ProcessInputEventQueue();
+
+        void OnFocusLost();
+
+        //void AddKeyEvent(KeyEvent& a_keyEvent);
+        void ProcessInputEvents(const RE::InputEvent* const* a_events);
+        bool ShouldConsumeInput() const;
 
     protected:
         bool isInitialized = false;
