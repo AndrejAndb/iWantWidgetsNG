@@ -15,7 +15,7 @@ using namespace std::literals;
 #define ROUND(x) std::floor(static_cast<float>(x + 0.5f))
 
 // 2=TRACE,1=ERROR,0=OFF
-#define LOGGING 0  
+#define LOGGING 1  
 
 #if(LOGGING > 0)
     #include <spdlog/sinks/basic_file_sink.h>

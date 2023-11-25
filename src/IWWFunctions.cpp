@@ -1,4 +1,5 @@
 #include <IWWFunctions.h>
+#include <ImGui/Manager.h>
 
 std::mutex          IWW::g_mutex;
 RE::GFxMovieView*   IWW::g_hudmenu      = nullptr;
@@ -18,6 +19,7 @@ void IWW::OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
         case SKSE::MessagingInterface::kPostLoadGame:   //for loading existing game
         case SKSE::MessagingInterface::kSaveGame:       //for new game
             _UpdateHud();
+            IWW::ImGui::Manager::GetSingleton().Init();
             SKSELOG("kPostLoadGame | kSaveGame")
             break;
         }

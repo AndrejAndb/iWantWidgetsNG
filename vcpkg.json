@@ -2,9 +2,14 @@
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
     "name": "hello-world",
     "version-string": "0.0.1",
-    "dependencies": [
-        "commonlibsse-ng",
-        "boost-algorithm",
-        "boost-atomic"
-    ]
+  "dependencies": [
+    "commonlibsse-ng",
+    "boost-algorithm",
+    "boost-atomic",
+    {
+      "name": "imgui",
+      "version>=": "1.90",
+      "features": [ "win32-binding", "dx11-binding" ]
+    }
+  ]
 }
