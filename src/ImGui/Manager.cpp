@@ -1,5 +1,7 @@
 #include <ImGui/Manager.h>
 
+#include <ImGui/TestWidget.h>
+
 #include <dinput.h>
 #include <dxgi.h>
 #include <imgui_impl_dx11.h>
@@ -44,8 +46,8 @@ void IWW::ImGui::Manager::Render() {
 
     ProcessInputEventQueue();
 
-    /* bool bShouldDraw = false;
-    for (const auto& window : _windows) {
+    bool bShouldDraw = false;
+    for (const auto& window : _widgets) {
         if (window->ShouldDraw()) {
             bShouldDraw = true;
         }
@@ -54,16 +56,16 @@ void IWW::ImGui::Manager::Render() {
     if (!bShouldDraw) {
         // early out
         return;
-    }*/
+    }
 
     UpdateStyle();
     ImGui_ImplWin32_NewFrame();
     ImGui_ImplDX11_NewFrame();
     ::ImGui::NewFrame();
 
-    /* for (const auto& window : _windows) {
+    for (const auto& window : _widgets) {
         window->TryDraw();
-    }*/
+    }
 
     ::ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(::ImGui::GetDrawData());
@@ -88,4 +90,4 @@ ImGuiStyle IWW::ImGui::Manager::GetDefaultStyle() {
 
 void IWW::ImGui::Manager::UpdateStyle() {}
 
-IWW::ImGui::Manager::Manager() {}
+IWW::ImGui::Manager::Manager() { _widgets[0] = std::make_unique<TestWidget>(); }

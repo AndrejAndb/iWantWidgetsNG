@@ -37,5 +37,7 @@ namespace IWW::ImGui {
         Manager(Manager&&) = delete;
         Manager& operator=(const Manager&) = delete;
         Manager& operator=(Manager&&) = delete;
+
+        std::array<std::unique_ptr<IWW::ImGui::Widget>, static_cast<size_t>(1)> _widgets;
     };
 }
