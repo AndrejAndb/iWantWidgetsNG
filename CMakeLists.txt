@@ -3,29 +3,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Set your project name. This will be the name of your SKSE .dll file.
-project(IWantWidgetsNative VERSION 1.2.3 LANGUAGES CXX)
-
-# #
-# YOU DO NOT NEED TO EDIT ANYTHING BELOW HERE
-# #
-
-# If you're not using a mod manager, you probably want the SKSE plugin to go
-# inside of your Skyrim "Data" folder.
-#
-# To do this automatically, set the `SKYRIM_FOLDER` environment variable
-# to the path of your Skyrim Special Edition folder
-if(DEFINED ENV{SKYRIM_FOLDER} AND IS_DIRECTORY "$ENV{SKYRIM_FOLDER}/Data")
-    set(OUTPUT_FOLDER "$ENV{SKYRIM_FOLDER}/Data")
-endif()
-
-# If you're using Mod Organizer 2 or Vortex, you might want this to go inside
-# of your "mods" folder, inside of a subfolder named "<your mod>".
-#
-# To do this automatically, set the `SKYRIM_MODS_FOLDER` environment variable
-# to the path of your "mods" folder
-if(DEFINED ENV{SKYRIM_MODS_FOLDER} AND IS_DIRECTORY "$ENV{SKYRIM_MODS_FOLDER}")
-    set(OUTPUT_FOLDER "$ENV{SKYRIM_MODS_FOLDER}/${PROJECT_NAME}")
-endif()
+project(IWantWidgetsNative VERSION 1.2.4 LANGUAGES CXX)
 
 # Otherwise, you can set OUTPUT_FOLDER to any place you'd like :)
 # set(OUTPUT_FOLDER "C:/path/to/any/folder")
@@ -40,6 +18,7 @@ endif()
 set(source_files ${source_files}
     src/IWWPapyrus.cpp
     src/IWWFunctions.cpp
+    src/IWWConfig.cpp
     src/IWWHooks.cpp
     src/ImGui/Manager.cpp
     src/ImGui/Widget.cpp

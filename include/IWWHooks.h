@@ -1,5 +1,6 @@
 #pragma once
 
+#include <IWWConfig.h>
 #include <windows.h>
 
 namespace IWW {
@@ -7,7 +8,7 @@ namespace IWW {
     class Hooks {
         public:
         static void installHooks() {
-            SKSELOG("Install hooks pre")
+            LOG("Install hooks pre")
 
             const REL::Relocation<uintptr_t> inputHook{
                 REL::VariantID(67315, 68617, 0xC519E0)};  // C150B0, C3B360, C519E0
@@ -36,7 +37,7 @@ namespace IWW {
             _Present =
                 trampoline.write_call<5>(presentHook.address() + REL::VariantOffset(0x9, 0x9, 0x15).offset(), Present);
 
-            SKSELOG("Install hooks post")
+            LOG("Install hooks post")
         }
 
         private:

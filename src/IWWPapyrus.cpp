@@ -3,42 +3,48 @@
 
 bool IWW::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine* vm)
 {
-    #define REGISTERPAPYRUSFUNC(name) {vm->RegisterFunction(#name, "iwant_widgets_native", IWW::name,PAPYRUSUNHOOKFPS);}
+    const bool loc_unhook = IWW::Config::GetSingleton()->CFG_PAPYUNHOOK;
 
-    REGISTERPAPYRUSFUNC(LoadMeter)
-    REGISTERPAPYRUSFUNC(LoadText)
-    REGISTERPAPYRUSFUNC(LoadWidget)
+    #if (PAPYRUSUNHOOKFPSALL == 1)
+        #define REGISTERPAPYRUSFUNC(name,unhook) {vm->RegisterFunction(#name, "iwant_widgets_native", IWW::name,loc_unhook);}
+    #else
+        #define REGISTERPAPYRUSFUNC(name,unhook) {vm->RegisterFunction(#name, "iwant_widgets_native", IWW::name,unhook && loc_unhook);}
+    #endif
 
-    REGISTERPAPYRUSFUNC(SetPos)
-    REGISTERPAPYRUSFUNC(SetSize)
-    REGISTERPAPYRUSFUNC(GetSize)
-    REGISTERPAPYRUSFUNC(SetZoom)
-    REGISTERPAPYRUSFUNC(SetVisible)
-    REGISTERPAPYRUSFUNC(SetRotation)
-    REGISTERPAPYRUSFUNC(SetTransparency)
-    REGISTERPAPYRUSFUNC(SetRGB)
-    REGISTERPAPYRUSFUNC(Destroy)
+    REGISTERPAPYRUSFUNC(LoadMeter,false)
+    REGISTERPAPYRUSFUNC(LoadText,false)
+    REGISTERPAPYRUSFUNC(LoadWidget,false)
 
-    REGISTERPAPYRUSFUNC(SetMeterPercent)
-    REGISTERPAPYRUSFUNC(SetMeterFillDirection)
-    REGISTERPAPYRUSFUNC(SendToBack)
-    REGISTERPAPYRUSFUNC(SendToFront)
-    REGISTERPAPYRUSFUNC(DoMeterFlash)
-    REGISTERPAPYRUSFUNC(SetMeterRGB)
+    REGISTERPAPYRUSFUNC(SetPos,true)
+    REGISTERPAPYRUSFUNC(SetSize,true)
+    REGISTERPAPYRUSFUNC(GetSize,false)
+    REGISTERPAPYRUSFUNC(SetZoom,true)
+    REGISTERPAPYRUSFUNC(SetVisible,true)
+    REGISTERPAPYRUSFUNC(SetRotation,true)
+    REGISTERPAPYRUSFUNC(SetTransparency,true)
+    REGISTERPAPYRUSFUNC(SetRGB,true)
+    REGISTERPAPYRUSFUNC(Destroy,true)
 
-    REGISTERPAPYRUSFUNC(SetText)
-    REGISTERPAPYRUSFUNC(AppendText)
-    REGISTERPAPYRUSFUNC(SwapDepths)
+    REGISTERPAPYRUSFUNC(SetMeterPercent,true)
+    REGISTERPAPYRUSFUNC(SetMeterFillDirection,true)
+    REGISTERPAPYRUSFUNC(SendToBack,true)
+    REGISTERPAPYRUSFUNC(SendToFront,true)
+    REGISTERPAPYRUSFUNC(DoMeterFlash,true)
+    REGISTERPAPYRUSFUNC(SetMeterRGB,true)
 
-    REGISTERPAPYRUSFUNC(DrawShapeLine)
-    REGISTERPAPYRUSFUNC(DrawShapeCircle)
-    REGISTERPAPYRUSFUNC(DrawShapeOrbit)
+    REGISTERPAPYRUSFUNC(SetText,true)
+    REGISTERPAPYRUSFUNC(AppendText,true)
+    REGISTERPAPYRUSFUNC(SwapDepths,true)
 
-    REGISTERPAPYRUSFUNC(DoTransitionByTime)
+    REGISTERPAPYRUSFUNC(DrawShapeLine,true)
+    REGISTERPAPYRUSFUNC(DrawShapeCircle,true)
+    REGISTERPAPYRUSFUNC(DrawShapeOrbit,true)
 
-    REGISTERPAPYRUSFUNC(IsHudReady)
-    REGISTERPAPYRUSFUNC(Reset)
-    REGISTERPAPYRUSFUNC(IsResetting)
+    REGISTERPAPYRUSFUNC(DoTransitionByTime,true)
+
+    REGISTERPAPYRUSFUNC(IsHudReady,true)
+    REGISTERPAPYRUSFUNC(Reset,true)
+    REGISTERPAPYRUSFUNC(IsResetting,true)
 
     #undef REGISTERPAPYRUSFUNC
     return true;

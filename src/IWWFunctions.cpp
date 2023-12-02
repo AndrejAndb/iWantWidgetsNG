@@ -2,7 +2,10 @@
 #include <ImGui/Manager.h>
 
 std::mutex          IWW::g_mutex;
-RE::GFxMovieView*   IWW::g_hudmenu      = nullptr;
+RE::GPtr<RE::GFxMovieView>   IWW::g_hudmenu = nullptr;
+RE::UI*             IWW::g_ui           = nullptr;
+IWW::Spinlock       IWW::g_spinlock;
+
 std::atomic_bool    IWW::g_reseting     = true;
 
 void IWW::OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
@@ -11,8 +14,10 @@ void IWW::OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
     {
         switch(a_msg->type)
         {
-        case SKSE::MessagingInterface::kPostPostLoad:
-            SKSELOG("kPostPostLoad")
+        case SKSE::MessagingInterface::kDataLoaded:
+            break;
+        case SKSE::MessagingInterface::kPostLoad:
+            IWW::Config::GetSingleton()->Update();
             break;
         case SKSE::MessagingInterface::kPreLoadGame:    //set reload flag, so we can prevent in papyrus calls of native function untill view get reset by invoking _reset
             g_reseting = true;
@@ -20,7 +25,7 @@ void IWW::OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
         case SKSE::MessagingInterface::kSaveGame:       //for new game
             _UpdateHud();
             IWW::ImGui::Manager::GetSingleton().Init();
-            SKSELOG("kPostLoadGame | kSaveGame")
+            LOG("kPostLoadGame | kSaveGame")
             break;
         }
     }
@@ -33,18 +38,17 @@ bool IWW::IsHudReady(PAPYRUSFUNCHANDLE)
 
 void IWW::Reset(PAPYRUSFUNCHANDLE, std::string a_root)
 {
-    SKSELOG("Reset({}) called",a_root) //logging
+    LOG("Reset({}) called",a_root) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) 
+    if (g_hudmenu == nullptr) 
     {
-        ERRORLOG("Reset({}) - ERROR - CAN'T LOAD UI!!",a_root) //logging
+        ERROR("Reset({}) - ERROR - CAN'T LOAD UI!!",a_root) //logging
         return;
     }
 
-    INVOKENOARGNORES(a_root,loc_view,"._reset")
+    INVOKENOARGNORES(a_root,"._reset")
 
-    SKSELOG("Reset({}) done",a_root) //logging
+    LOG("Reset({}) done",a_root) //logging
 
     g_reseting = false; //reset done
 }
@@ -58,18 +62,17 @@ int IWW::LoadMeter(PAPYRUSFUNCHANDLE, std::string a_root, int a_xpos, int a_ypos
 {
     std::string     loc_argstr = std::string(std::to_string(a_xpos) + "|" + std::to_string(a_ypos) + "|" + std::to_string(static_cast<int>(a_visible)));
 
-    SKSELOG("LoadMeter({},{}) called",a_root,loc_argstr) //logging
+    LOG("LoadMeter({},{}) called",a_root,loc_argstr) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) 
+    if (g_hudmenu == nullptr) 
     {
-        ERRORLOG("LoadMeter({},{}) - ERROR - CAN'T LOAD UI!!",a_root,loc_argstr) //logging
+        ERROR("LoadMeter({},{}) - ERROR - CAN'T LOAD UI!!",a_root,loc_argstr) //logging
         return -1; 
     }
 
-    INVOKEARGRESET(a_root,loc_view,loc_argstr,loc_res,".loadMeter")
+    auto loc_res = INVOKEARGRESET(a_root,loc_argstr,".loadMeter")
 
-    SKSELOG("LoadMeter({},{}) - New ID = {}",a_root,loc_argstr,loc_res.GetNumber()) //logging
+    LOG("LoadMeter({},{}) - New ID = {}",a_root,loc_argstr,ROUND(loc_res.GetNumber())) //logging
 
     return ROUND(loc_res.GetNumber());
 }
@@ -85,18 +88,17 @@ int IWW::LoadText(PAPYRUSFUNCHANDLE, std::string a_root, std::string a_text, std
         std::to_string(static_cast<int>(a_visible))
     );
 
-    SKSELOG("LoadText({},{}) called",a_root,loc_argstr) //logging
+    LOG("LoadText({},{}) called",a_root,loc_argstr) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) 
+    if (g_hudmenu == nullptr) 
     {
-        ERRORLOG("LoadText({},{}) - ERROR - CAN'T LOAD UI!!",a_root,loc_argstr) //logging
+        ERROR("LoadText({},{}) - ERROR - CAN'T LOAD UI!!",a_root,loc_argstr) //logging
         return -1; 
     }
 
-    INVOKEARGRESET(a_root,loc_view,loc_argstr,loc_res,".loadText")
+    auto loc_res = INVOKEARGRESET(a_root,loc_argstr,".loadText")
 
-    SKSELOG("LoadText({},{}) - New ID = {}",a_root,loc_argstr,loc_res.GetNumber()) //logging
+    LOG("LoadText({},{}) - New ID = {}",a_root,loc_argstr,loc_res.GetNumber()) //logging
 
     return ROUND(loc_res.GetNumber());
 }
@@ -110,18 +112,17 @@ int IWW::LoadWidget(PAPYRUSFUNCHANDLE, std::string a_root, std::string a_filenam
         std::to_string(static_cast<int>(a_visible))
     );
 
-    SKSELOG("loadWidget({},{}) called",a_root,loc_argstr) //logging
+    LOG("loadWidget({},{}) called",a_root,loc_argstr) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) 
+    if (g_hudmenu == nullptr) 
     {
-        ERRORLOG("loadWidget({},{}) - ERROR - CAN'T LOAD UI!!",a_root,loc_argstr) //logging
+        ERROR("loadWidget({},{}) - ERROR - CAN'T LOAD UI!!",a_root,loc_argstr) //logging
         return -1; 
     }
 
-    INVOKEARGRESET(a_root,loc_view,loc_argstr,loc_res,".loadWidget")
+    auto loc_res = INVOKEARGRESET(a_root,loc_argstr,".loadWidget")
 
-    SKSELOG("loadWidget({},{}) - New ID = {}",a_root,loc_argstr,loc_res.GetNumber()) //logging
+    LOG("loadWidget({},{}) - New ID = {}",a_root,loc_argstr,loc_res.GetNumber()) //logging
 
     return ROUND(loc_res.GetNumber());
 }
@@ -137,14 +138,13 @@ void IWW::SetPos(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_xpos, in
         std::to_string(a_ypos)
     );
 
-    SKSELOG("SetPos({},{},{}) called",a_root,loc_argstr1,loc_argstr2) //logging
+    LOG("SetPos({},{},{}) called",a_root,loc_argstr1,loc_argstr2) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES2(a_root,loc_view,loc_argstr1,loc_argstr2,".setXPos",".setYPos")
+    INVOKEARGNORES2(a_root,loc_argstr1,loc_argstr2,".setXPos",".setYPos")
 }
 
 void IWW::SetSize(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_height, int a_width)
@@ -158,36 +158,34 @@ void IWW::SetSize(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_height,
         std::to_string(a_width)
     );
 
-    SKSELOG("SetSize({},{},{}) called",a_root,loc_argstr1,loc_argstr2) //logging
+    LOG("SetSize({},{},{}) called",a_root,loc_argstr1,loc_argstr2) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES2(a_root,loc_view,loc_argstr1,loc_argstr2,".setHeight",".setWidth")
+    INVOKEARGNORES2(a_root,loc_argstr1,loc_argstr2,".setHeight",".setWidth")
 }
 
 int IWW::GetSize(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_type)
 {
     std::string loc_argstr = std::string(std::to_string(a_id));
 
-    SKSELOG("GetSize({},{}) called, type = {}",a_root,loc_argstr,a_type) //logging
+    LOG("GetSize({},{}) called, type = {}",a_root,loc_argstr,a_type) //logging
 
     VALIDATEID(a_id,0)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return 0;
+    if (g_hudmenu == nullptr) return 0;
 
     if (a_type == 0) 
     {
-        INVOKEARGNORESRESET(a_root,loc_view,loc_argstr,".getXsize")
-        return ROUND(std::stoi(INVOKEARGNORESRESET_message.GetString()));
+        auto loc_res = INVOKEARGNORESRESET(a_root,loc_argstr,".getXsize")
+        return ROUND(std::stoi(loc_res.GetString()));
     }
     else 
     {
-        INVOKEARGNORESRESET(a_root,loc_view,loc_argstr,".getYsize")
-        return ROUND(std::stoi(INVOKEARGNORESRESET_message.GetString()));
+        auto loc_res = INVOKEARGNORESRESET(a_root,loc_argstr,".getYsize")
+        return ROUND(std::stoi(loc_res.GetString()));
     }
 }
 
@@ -202,56 +200,52 @@ void IWW::SetZoom(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_xscale,
         std::to_string(a_yscale)
     );
 
-    SKSELOG("SetZoom({},{},{}) called",a_root,loc_argstr1,loc_argstr2) //logging
+    LOG("SetZoom({},{},{}) called",a_root,loc_argstr1,loc_argstr2) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES2(a_root,loc_view,loc_argstr1,loc_argstr2,".setXScale",".setYScale")
+    INVOKEARGNORES2(a_root,loc_argstr1,loc_argstr2,".setXScale",".setYScale")
 }
 
 void IWW::SetVisible(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_visible)
 {
     std::string loc_argstr = std::string(std::to_string(a_id) + "|" + std::to_string(a_visible));
 
-    SKSELOG("SetVisible({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetVisible({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setVisible")
+    INVOKEARGNORES(a_root,loc_argstr,".setVisible")
 }
 
 void IWW::SetRotation(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_rotation)
 {
     std::string loc_argstr = std::string(std::to_string(a_id) + "|" + std::to_string(a_rotation));
 
-    SKSELOG("SetRotation({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetRotation({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setRotation")
+    INVOKEARGNORES(a_root,loc_argstr,".setRotation")
 }
 
 void IWW::SetTransparency(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_alpha)
 {
     std::string loc_argstr = std::string(std::to_string(a_id) + "|" + std::to_string(a_alpha));
 
-    SKSELOG("SetTransparency({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetTransparency({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setAlpha")
+    INVOKEARGNORES(a_root,loc_argstr,".setAlpha")
 }
 
 void IWW::SetRGB(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_r, int a_g, int a_b)
@@ -261,14 +255,13 @@ void IWW::SetRGB(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_r, int a
         std::to_string(((a_r & 0xFF) << 16) | ((a_g & 0xFF) << 8) | (a_b & 0xFF))
     );
 
-    SKSELOG("SetRGB({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetRGB({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setColor")
+    INVOKEARGNORES(a_root,loc_argstr,".setColor")
 }
 
 void IWW::Destroy(PAPYRUSFUNCHANDLE, std::string a_root, int a_id)
@@ -277,83 +270,77 @@ void IWW::Destroy(PAPYRUSFUNCHANDLE, std::string a_root, int a_id)
         std::to_string(a_id)
     );
     
-    SKSELOG("Destroy({},{}) called",a_root,loc_argstr) //logging
+    LOG("Destroy({},{}) called",a_root,loc_argstr) //logging
     
     VALIDATEID(a_id,)
     
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".destroy")
+    if (g_hudmenu == nullptr) return;
+    INVOKEARGNORES(a_root,loc_argstr,".destroy")
 }
 
 void IWW::SetMeterPercent(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_perc)
 {
     std::string loc_argstr = std::string(std::to_string(a_id) + "|" + std::to_string(a_perc));
 
-    SKSELOG("SetMeterPercent({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetMeterPercent({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setMeterPercent")
+    INVOKEARGNORES(a_root,loc_argstr,".setMeterPercent")
 }
 
 void IWW::SetMeterFillDirection(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, std::string a_direction)
 {
     std::string loc_argstr = std::string(std::to_string(a_id) + "|" + a_direction);
 
-    SKSELOG("SetMeterFillDirection({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetMeterFillDirection({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setMeterFillDirection")
+    INVOKEARGNORES(a_root,loc_argstr,".setMeterFillDirection")
 }
 
 void IWW::SendToBack(PAPYRUSFUNCHANDLE, std::string a_root, int a_id)
 {
     std::string loc_argstr = std::string(std::to_string(a_id));
 
-    SKSELOG("SendToBack({},{}) called",a_root,loc_argstr) //logging
+    LOG("SendToBack({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".sendToBack")
+    INVOKEARGNORES(a_root,loc_argstr,".sendToBack")
 }
 
 void IWW::SendToFront(PAPYRUSFUNCHANDLE, std::string a_root, int a_id)
 {
     std::string loc_argstr = std::string(std::to_string(a_id));
 
-    SKSELOG("SendToFront({},{}) called",a_root,loc_argstr) //logging
+    LOG("SendToFront({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".sendToFront")
+    INVOKEARGNORES(a_root,loc_argstr,".sendToFront")
 }
 
 void IWW::DoMeterFlash(PAPYRUSFUNCHANDLE, std::string a_root, int a_id)
 {
     std::string loc_argstr = std::string(std::to_string(a_id));
 
-    SKSELOG("DoMeterFlash({},{}) called",a_root,loc_argstr) //logging
+    LOG("DoMeterFlash({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".doMeterFlash")
+    INVOKEARGNORES(a_root,loc_argstr,".doMeterFlash")
 }
 
 void IWW::SetMeterRGB(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_lightR, int a_lightG, int a_lightB, int a_darkR, int a_darkG, int a_darkB, int a_flashR, int a_flashG, int a_flashB)
@@ -365,14 +352,13 @@ void IWW::SetMeterRGB(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_lig
         std::to_string(((a_flashR & 0xFF) << 16) | ((a_flashG & 0xFF) << 8) | (a_flashB & 0xFF))
     );
 
-    SKSELOG("SetMeterRGB({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetMeterRGB({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setMeterColors")
+    INVOKEARGNORES(a_root,loc_argstr,".setMeterColors")
 }
 
 void IWW::SetText(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, std::string a_text)
@@ -382,14 +368,13 @@ void IWW::SetText(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, std::string a
         a_text
     );
 
-    SKSELOG("SetText({},{}) called",a_root,loc_argstr) //logging
+    LOG("SetText({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".setText")
+    INVOKEARGNORES(a_root,loc_argstr,".setText")
 }
 
 void IWW::AppendText(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, std::string a_text)
@@ -399,14 +384,13 @@ void IWW::AppendText(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, std::strin
         a_text
     );
 
-    SKSELOG("AppendText({},{}) called",a_root,loc_argstr) //logging
+    LOG("AppendText({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".appendText")
+    INVOKEARGNORES(a_root,loc_argstr,".appendText")
 }
 
 void IWW::SwapDepths(PAPYRUSFUNCHANDLE, std::string a_root, int a_id1, int a_id2)
@@ -416,15 +400,14 @@ void IWW::SwapDepths(PAPYRUSFUNCHANDLE, std::string a_root, int a_id1, int a_id2
         std::to_string(a_id2)
     );
 
-    SKSELOG("SwapDepths({},{}) called",a_root,loc_argstr) //logging
+    LOG("SwapDepths({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id1,)
     VALIDATEID(a_id2,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".swapDepths")
+    INVOKEARGNORES(a_root,loc_argstr,".swapDepths")
 }
 
 void IWW::DrawShapeLine(PAPYRUSFUNCHANDLE, std::string a_root, std::vector<int> a_list, int a_XPos, int a_YPos, int a_XChange, int a_YChange, bool a_skipInvisible, bool a_skipAlpha0)
@@ -443,12 +426,11 @@ void IWW::DrawShapeLine(PAPYRUSFUNCHANDLE, std::string a_root, std::vector<int> 
         loc_argstr += std::string("|" + std::to_string(it));
     }
 
-    SKSELOG("DrawShapeLine({},{}) called",a_root,loc_argstr) //logging
+    LOG("DrawShapeLine({},{}) called",a_root,loc_argstr) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".drawLine")
+    INVOKEARGNORES(a_root,loc_argstr,".drawLine")
 }
 
 void IWW::DrawShapeCircle(PAPYRUSFUNCHANDLE, std::string a_root, std::vector<int> a_list, int a_XPos, int a_YPos, int a_Radius, int a_StartAngle, int a_DegreeChange, bool a_skipInvisible, bool a_skipAlpha0, bool a_AutoSpace)
@@ -469,12 +451,11 @@ void IWW::DrawShapeCircle(PAPYRUSFUNCHANDLE, std::string a_root, std::vector<int
         loc_argstr += std::string("|" + std::to_string(it));
     }
 
-    SKSELOG("DrawShapeCircle({},{}) called",a_root,loc_argstr) //logging
+    LOG("DrawShapeCircle({},{}) called",a_root,loc_argstr) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".drawCircle")
+    INVOKEARGNORES(a_root,loc_argstr,".drawCircle")
 }
 
 void IWW::DrawShapeOrbit(PAPYRUSFUNCHANDLE, std::string a_root, std::vector<int> a_list, int a_XPos, int a_YPos, int a_Radius, int a_StartAngle, int a_DegreeChange, bool a_skipInvisible, bool a_skipAlpha0, bool a_AutoSpace)
@@ -495,12 +476,11 @@ void IWW::DrawShapeOrbit(PAPYRUSFUNCHANDLE, std::string a_root, std::vector<int>
         loc_argstr += std::string("|" + std::to_string(it));
     }
 
-    SKSELOG("DrawShapeOrbit({},{}) called",a_root,loc_argstr) //logging
+    LOG("DrawShapeOrbit({},{}) called",a_root,loc_argstr) //logging
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".drawOrbit")
+    INVOKEARGNORES(a_root,loc_argstr,".drawOrbit")
 }
 
 void IWW::DoTransitionByTime(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, int a_targetValue, float a_seconds, std::string a_targetAttribute, std::string a_easingClass, std::string a_easingMethod, float a_delay)
@@ -551,20 +531,20 @@ void IWW::DoTransitionByTime(PAPYRUSFUNCHANDLE, std::string a_root, int a_id, in
 
     std::string loc_argstr = _SelializeArray<7>(loc_array);
 
-    SKSELOG("DoTransitionByTime({},{}) called",a_root,loc_argstr) //logging
+    LOG("DoTransitionByTime({},{}) called",a_root,loc_argstr) //logging
 
     VALIDATEID(a_id,)
 
-    RE::GFxMovieView* loc_view = g_hudmenu;
-    if (loc_view == nullptr) return;
+    if (g_hudmenu == nullptr) return;
 
-    INVOKEARGNORES(a_root,loc_view,loc_argstr,".doTransition")
+    INVOKEARGNORES(a_root,loc_argstr,".doTransition")
 }
 
-void IWW::_UpdateWidget(RE::GFxMovieView* a_view)
+void IWW::_UpdateWidget(RE::GPtr<RE::GFxMovieView> a_view)
 {
     //update by very small time so internal AS vars are updated
-    a_view->Advance(0.0f);
+    if (a_view.get() != nullptr) a_view->Advance(0.0001f);
+    else ERROR("Cant update movie because it is none")
 }
 
 inline bool IWW::_UpdateHud()
@@ -573,27 +553,198 @@ inline bool IWW::_UpdateHud()
     {                               \
         if (ptr == errvalue)        \
         {                           \
-        ERRORLOG(msg)               \
+        ERROR(msg)               \
         return false;               \
         }                           \
     }
 
     if (g_hudmenu != nullptr) return true;
 
-    RE::UI* loc_ui = RE::UI::GetSingleton();
-    CHECKHUDERROR(loc_ui,nullptr,"ERROR: Failed getting hud - loc_ui => null")
-    auto loc_hud = loc_ui->menuMap.find("HUD Menu");
-    CHECKHUDERROR(loc_hud,loc_ui->menuMap.end(),"ERROR: Failed getting hud - HUD not found in menu map")
+    g_ui = RE::UI::GetSingleton();
+    CHECKHUDERROR(g_ui,nullptr,"Failed getting hud - g_ui => null")
+    auto loc_hud = g_ui->menuMap.find("HUD Menu");
+    CHECKHUDERROR(loc_hud,g_ui->menuMap.end(),"Failed getting hud - HUD not found in menu map")
     RE::GPtr<RE::IMenu> loc_hudmenu = loc_hud->second.menu; 
-    CHECKHUDERROR(loc_hudmenu.get(),nullptr,"ERROR: Failed getting hud - loc_hudmenu => null")
+    CHECKHUDERROR(loc_hudmenu.get(),nullptr,"Failed getting hud - loc_hudmenu => null")
     RE::GPtr<RE::GFxMovieView> loc_movie = loc_hudmenu->uiMovie;
-    CHECKHUDERROR(loc_movie.get(),nullptr,"ERROR: Failed getting hud - loc_movie => null")
+    CHECKHUDERROR(loc_movie.get(),nullptr,"Failed getting hud - loc_movie => null")
 
-    g_hudmenu = loc_movie.get();
+    g_hudmenu = loc_hudmenu->uiMovie;
 
-    SKSELOG("HUD Loaded!")
+    LOG("HUD Loaded!")
 
     #undef CHECKHUDERROR
 
     return true;
+}
+
+void IWW::INVOKE2_fun(std::string a_root, std::string a_arg1, std::string a_arg2, std::string a_fun1, std::string a_fun2)
+{
+    if (IWW::Config::GetSingleton()->CFG_USETASK)
+    {
+        SKSE::GetTaskInterface()->AddUITask([a_root,a_arg1,a_arg2,a_fun1,a_fun2]
+        {
+            LOG("INVOKE2_fun 1 start")
+            INVOKESTART 
+            const std::string     loc_pathloadmeter1 = (a_root + a_fun1);
+            RE::GFxValue    loc_arg1;
+            RE::GFxValue*   loc_argptr1 = NULL;
+            uint32_t        loc_argnum1 = 0;
+
+            if (a_arg1 != "")
+            {
+                loc_arg1.SetString(a_arg1);
+                loc_argptr1 = &loc_arg1;
+                loc_argnum1 += 2;
+            }
+        
+            g_hudmenu->InvokeNoReturn(loc_pathloadmeter1.c_str(),loc_argptr1,loc_argnum1);
+            _UpdateWidget(g_hudmenu);
+
+            INVOKEEND
+            LOG("INVOKE2_fun 1 end")
+        });
+
+        SKSE::GetTaskInterface()->AddUITask([a_root,a_arg1,a_arg2,a_fun1,a_fun2]
+        {
+            LOG("INVOKE2_fun 2 start")
+            INVOKESTART
+            const std::string     loc_pathloadmeter2 = (a_root + a_fun2);
+            RE::GFxValue    loc_arg2;
+            RE::GFxValue*   loc_argptr2 = NULL;
+            uint32_t        loc_argnum2 = 0;
+
+            if (a_arg2 != "")
+            {
+                loc_arg2.SetString(a_arg2);
+                loc_argptr2 = &loc_arg2;
+                loc_argnum2 += 1;
+            }
+
+            g_hudmenu->InvokeNoReturn(loc_pathloadmeter2.c_str(),loc_argptr2,loc_argnum2);
+            _UpdateWidget(g_hudmenu);
+
+            INVOKEEND
+            LOG("INVOKE2_fun 2 end")
+        });
+    }
+    else
+    {
+        LOG("INVOKE2_fun start")
+        INVOKESTART 
+        const std::string     loc_pathloadmeter1 = (a_root + a_fun1);
+        const std::string     loc_pathloadmeter2 = (a_root + a_fun2);
+
+        RE::GFxValue    loc_arg1;
+        RE::GFxValue*   loc_argptr1 = NULL;
+        uint32_t        loc_argnum1 = 0;
+
+        if (a_arg1 != "")
+        {
+            loc_arg1.SetString(a_arg1);
+            loc_argptr1 = &loc_arg1;
+            loc_argnum1 += 2;
+        }
+        
+        g_hudmenu->InvokeNoReturn(loc_pathloadmeter1.c_str(),loc_argptr1,loc_argnum1);
+        _UpdateWidget(g_hudmenu);
+
+        RE::GFxValue    loc_arg2;
+        RE::GFxValue*   loc_argptr2 = NULL;
+        uint32_t        loc_argnum2 = 0;
+
+        if (a_arg2 != "")
+        {
+            loc_arg2.SetString(a_arg2);
+            loc_argptr2 = &loc_arg2;
+            loc_argnum2 += 1;
+        }
+
+        g_hudmenu->InvokeNoReturn(loc_pathloadmeter2.c_str(),loc_argptr2,loc_argnum2);
+        _UpdateWidget(g_hudmenu);
+
+        INVOKEEND
+        LOG("INVOKE2_fun end")
+    }
+}
+
+void IWW::INVOKE_fun(std::string a_root, std::string a_arg, std::string a_fun)
+{
+    if (IWW::Config::GetSingleton()->CFG_USETASK)
+    {
+        SKSE::GetTaskInterface()->AddUITask([a_root,a_arg,a_fun]
+        {
+            LOG("INVOKE_fun start")
+            INVOKESTART
+            const std::string loc_pathloadmeter = (a_root + a_fun);
+            RE::GFxValue*   loc_argptr = NULL;
+            RE::GFxValue    loc_arg;
+            uint32_t        loc_argnum = 0;
+
+            if (a_arg != "")
+            {
+                loc_arg.SetString(a_arg);
+                loc_argptr  = &loc_arg;
+                loc_argnum += 1;
+            }
+
+            g_hudmenu->InvokeNoReturn(loc_pathloadmeter.c_str(),loc_argptr,loc_argnum);
+            _UpdateWidget(g_hudmenu); 
+            INVOKEEND
+            LOG("INVOKE_fun end")
+        });
+    }
+    else
+    {
+        INVOKESTART
+        const std::string loc_pathloadmeter = (a_root + a_fun);
+        RE::GFxValue*   loc_argptr = NULL;
+        RE::GFxValue    loc_arg;
+        uint32_t        loc_argnum = 0;
+
+        if (a_arg != "")
+        {
+            loc_arg.SetString(a_arg);
+            loc_argptr  = &loc_arg;
+            loc_argnum += 1;
+        }
+
+        g_hudmenu->InvokeNoReturn(loc_pathloadmeter.c_str(),loc_argptr,loc_argnum);
+        _UpdateWidget(g_hudmenu);
+        LOG("INVOKE_fun") 
+        INVOKEEND
+    }
+}
+
+RE::GFxValue IWW::INVOKERES_fun(std::string a_root, std::string a_arg, std::string a_fun)
+{
+    {
+        LOG("INVOKERES_fun start")
+        INVOKESTART 
+        const std::string loc_pathloadmeter = (a_root + a_fun);
+
+        RE::GFxValue*   loc_argptr = NULL;
+        RE::GFxValue    loc_arg;
+        RE::GFxValue    loc_res;
+        uint32_t        loc_argnum = 0;
+
+        if (a_arg != "")
+        {
+            loc_arg.SetString(a_arg);
+            loc_argptr  = &loc_arg;
+            loc_argnum += 1;
+        }
+        
+        g_hudmenu->Invoke(loc_pathloadmeter.c_str(),&loc_res,loc_argptr,loc_argnum);
+        _UpdateWidget(g_hudmenu);
+
+        RE::GFxValue loc_tmpres; 
+        const std::string loc_pathresetoutput = (a_root + "._getOutputMessage");
+        g_hudmenu->Invoke(loc_pathresetoutput.c_str(),&loc_tmpres,NULL,0);
+        _UpdateWidget(g_hudmenu);
+
+        INVOKEEND
+        LOG("INVOKERES_fun end - {}",ROUND(loc_res.GetNumber()))
+        return loc_res;
+    }
 }

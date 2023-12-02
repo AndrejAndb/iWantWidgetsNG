@@ -6,6 +6,7 @@
     "commonlibsse-ng",
     "boost-algorithm",
     "boost-atomic",
+    "boost-property-tree",
     {
       "name": "imgui",
       "version>=": "1.90",
